@@ -1,0 +1,87 @@
+---
+title: Quarrelling with Hugo
+author: ~
+date: '2018-08-14'
+slug: firstpost
+categories: 
+  - R programming
+  - Data visualisation
+tags:
+  - R
+  - blogdown
+  - Hugo
+  - non-linear binning
+  - ggplot
+  - viridis
+---
+
+```{r knitr_setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Blogdown is, disappointingly, not anywhere near as easy as I was led to believe.
+Or possibly, Blogdown is perfectly simple and it's Hugo I have a quarrel with.
+Yes, I think that's it.  I've definitely found a dodgy tutorial, because when I tried to use new_post to generate an .Rmd file, it created an .md file, which was not what I wanted at all.  RStudio seems more intelligent on that point, at least.  However, when I accidentally closed the viewer, I ended up destroying the site and re-installing it just to get the viewer to open again.  I hope there's a better way, because once there's content, that will get extremely tedious.
+
+I want to put some R on this, so I am going to post a ghastly graphic-in-progress.
+I promise, it will be less ghastly once it is actually applied to real data. This is 
+actually pretty weird code for me, since it was originally designed to be a minimal 
+reproducible example for a problem which I then solved.  Just about everything I write normally uses at minimum __dplyr__ and __tibble__, and is full of chains of pipes.
+
+There is colourblindness in the family, so I am delighted to be trying out the __viridis__ package.
+
+```{r libraries}
+library(ggplot2)
+# Using viridis because it is colourblind friendly
+# and also easier to interpret accurately
+# Need full version rather than the viridisLite which is
+# in ggplot2 because we need to use the discrete option
+suppressMessages(library(viridis))
+```
+
+Scientific notation is ugly in legends.
+
+```{r setup}
+# Don't want scientific notation in my output
+options(scipen = 999)
+```
+
+Knock together some random data better suited to a logarithmic-style scale.  Note that I have thus far avoided dealing with NAs or empty cells.
+
+```{r make_data}
+set.seed(412875)
+a <- round(runif(100, 1, 10)^seq(1, 5, by=1), 0)
+df <- data.frame(
+  lat = as.vector(sapply(1:10, function(x) rep(x, 10))), 
+  long = seq(1, 10), count = as.integer(a))
+```
+
+My scale breaks aren't truly logarithmic, because I wanted them to be relatively
+friendly to look at.
+
+```{r prep_plot}
+scale_breaks <- c(5, 10, 50, 500, 1000, 5000, 10000, 50000, 100000)
+scale_labels <- c(paste0(0, "-", scale_breaks[1]), 
+  sapply(seq(2, length(scale_breaks)), 
+  function(x) paste0(scale_breaks[x-1], "-", scale_breaks[x])))
+df$binned_count <- cut(df$count, breaks = c(0, scale_breaks), 
+  labels = scale_breaks)
+```
+
+Theme inferno's fairly loud, but why not?  I'm just messing around.
+
+```{r make_plot}
+the_plot <- ggplot(df, aes(x = long, y = lat, fill = binned_count)) +
+  geom_tile() +
+  xlab("Longitude") +
+  ylab("Latitude")
+  scale_fill_viridis(name = "No. Records", 
+    breaks = c(scale_breaks), 
+    labels = scale_labels, 
+    guide = "legend", option = "inferno", discrete = TRUE) 
+```
+
+```{r plot_the_plot, fig.width = 6, fig.height = 4, fig.cap = "Plot to demonstrate non-linear binning of spatial count data", echo = FALSE}
+print(the_plot)
+```
+

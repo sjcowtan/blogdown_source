@@ -1,0 +1,102 @@
+---
+title: Quarrelling with Hugo
+author: ~
+date: '2018-08-14'
+slug: firstpost
+categories: 
+  - R programming
+  - Data visualisation
+tags:
+  - R
+  - blogdown
+  - Hugo
+  - non-linear binning
+  - ggplot
+  - viridis
+---
+
+
+
+<p>Blogdown is, disappointingly, not anywhere near as easy as I was led to believe. Or possibly, Blogdown is perfectly simple and it’s Hugo I have a quarrel with. Yes, I think that’s it. I’ve definitely found a dodgy tutorial, because when I tried to use new_post to generate an .Rmd file, it created an .md file, which was not what I wanted at all. RStudio seems more intelligent on that point, at least. However, when I accidentally closed the viewer, I ended up destroying the site and re-installing it just to get the viewer to open again. I hope there’s a better way, because once there’s content, that will get extremely tedious.</p>
+<p>I want to put some R on this, so I am going to post a ghastly graphic-in-progress. I promise, it will be less ghastly once it is actually applied to real data. This is actually pretty weird code for me, since it was originally designed to be a minimal reproducible example for a problem which I then solved. Just about everything I write normally uses at minimum <strong>dplyr</strong> and <strong>tibble</strong>, and is full of chains of pipes.</p>
+<p>There is colourblindness in the family, so I am delighted to be trying out the <strong>viridis</strong> package.</p>
+<pre class="r"><code>library(ggplot2)
+# Using viridis because it is colourblind friendly
+# and also easier to interpret accurately
+# Need full version rather than the viridisLite which is
+# in ggplot2 because we need to use the discrete option
+suppressMessages(library(viridis))</code></pre>
+<p>Scientific notation is ugly in legends.</p>
+<pre class="r"><code># Don&#39;t want scientific notation in my output
+options(scipen = 999)</code></pre>
+<p>Knock together some random data better suited to a logarithmic-style scale. Note that I have thus far avoided dealing with NAs or empty cells.</p>
+<pre class="r"><code>set.seed(412875)
+a &lt;- round(runif(100, 1, 10)^seq(1, 5, by=1), 0)
+df &lt;- data.frame(
+  lat = as.vector(sapply(1:10, function(x) rep(x, 10))), 
+  long = seq(1, 10), count = as.integer(a))</code></pre>
+<p>My scale breaks aren’t truly logarithmic, because I wanted them to be relatively friendly to look at.</p>
+<pre class="r"><code>scale_breaks &lt;- c(5, 10, 50, 500, 1000, 5000, 10000, 50000, 100000)
+scale_labels &lt;- c(paste0(0, &quot;-&quot;, scale_breaks[1]), 
+  sapply(seq(2, length(scale_breaks)), 
+  function(x) paste0(scale_breaks[x-1], &quot;-&quot;, scale_breaks[x])))
+df$binned_count &lt;- cut(df$count, breaks = c(0, scale_breaks), 
+  labels = scale_breaks)</code></pre>
+<p>Theme inferno’s fairly loud, but why not? I’m just messing around.</p>
+<pre class="r"><code>the_plot &lt;- ggplot(df, aes(x = long, y = lat, fill = binned_count)) +
+  geom_tile() +
+  xlab(&quot;Longitude&quot;) +
+  ylab(&quot;Latitude&quot;)
+  scale_fill_viridis(name = &quot;No. Records&quot;, 
+    breaks = c(scale_breaks), 
+    labels = scale_labels, 
+    guide = &quot;legend&quot;, option = &quot;inferno&quot;, discrete = TRUE) </code></pre>
+<pre><code>## &lt;ggproto object: Class ScaleDiscrete, Scale, gg&gt;
+##     aesthetics: fill
+##     axis_order: function
+##     break_info: function
+##     break_positions: function
+##     breaks: 5 10 50 500 1000 5000 10000 50000 100000
+##     call: call
+##     clone: function
+##     dimension: function
+##     drop: TRUE
+##     expand: waiver
+##     get_breaks: function
+##     get_breaks_minor: function
+##     get_labels: function
+##     get_limits: function
+##     guide: legend
+##     is_discrete: function
+##     is_empty: function
+##     labels: 0-5 5-10 10-50 50-500 500-1000 1000-5000 5000-10000 1000 ...
+##     limits: NULL
+##     make_sec_title: function
+##     make_title: function
+##     map: function
+##     map_df: function
+##     name: No. Records
+##     na.translate: TRUE
+##     na.value: NA
+##     n.breaks.cache: NULL
+##     palette: function
+##     palette.cache: NULL
+##     position: left
+##     range: &lt;ggproto object: Class RangeDiscrete, Range, gg&gt;
+##         range: NULL
+##         reset: function
+##         train: function
+##         super:  &lt;ggproto object: Class RangeDiscrete, Range, gg&gt;
+##     reset: function
+##     scale_name: viridis
+##     train: function
+##     train_df: function
+##     transform: function
+##     transform_df: function
+##     super:  &lt;ggproto object: Class ScaleDiscrete, Scale, gg&gt;</code></pre>
+<div class="figure">
+<img src="/blog/2018-08-14-quarrelling-with-hugo_files/figure-html/plot_the_plot-1.png" alt="Plot to demonstrate non-linear binning of spatial count data" width="576" />
+<p class="caption">
+(#fig:plot_the_plot)Plot to demonstrate non-linear binning of spatial count data
+</p>
+</div>
