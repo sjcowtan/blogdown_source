@@ -1,0 +1,58 @@
+---
+title: Quarrelling with Hugo
+author: ~
+date: '2018-08-14'
+slug: firstpost
+categories: 
+  - R programming
+  - Data visualisation
+tags:
+  - R
+  - blogdown
+  - non-linear binning
+  - ggplot
+  - viridis
+---
+
+
+
+<p>Blogdown is, disappointingly, not anywhere near as easy to set up as I was led to believe. Or possibly, Blogdown setup is perfectly simple and it’s Hugo I have a quarrel with. Yes, I think that’s it. I’ve definitely found a dodgy tutorial, because when I tried to use new_post in the way it assured me would generate an .Rmd file, it created an .md file called foo-Rmd.md, which was not what I wanted at all. RStudio seems more intelligent on that point, at least; if I just create an Rmd file in the blogdown project it clones the example post, with the correct extension. However, when I accidentally closed the viewer, I ended up despairing and destroying the site and re-installing it just to get the viewer to open again. I hope there’s a better way, because once there’s content, that will get extremely tedious. Also, why does it feel the need to re-render <em>every</em> post?</p>
+<p>I want to put some R on this, so I am going to post a ghastly graphic-in-progress. I promise, it will be less ghastly once it is actually applied to real data. This is actually pretty weird code for me, since it was originally designed to be a minimal reproducible example for a problem which I then solved. Just about everything I write normally uses at minimum <strong>dplyr</strong> and <strong>tibble</strong>, and is full of chains of pipes.</p>
+<p>There is colourblindness in the family, so I am delighted to be trying out the <strong>viridis</strong> package. My domesticated protanope says it works for him, but he did have to squint at a couple of the neighbouring colours for a while.</p>
+<pre class="r"><code>library(ggplot2); theme_set(theme_bw()) 
+# Using viridis because it is colourblind friendly
+# and also easier to interpret accurately
+# Need full version rather than the viridisLite which is
+# in ggplot2 because we need to use the discrete option
+suppressMessages(library(viridis))</code></pre>
+<p>Scientific notation is ugly in legends.</p>
+<pre class="r"><code># Don&#39;t want scientific notation in my output
+options(scipen = 999)</code></pre>
+<p>Knock together some random data better suited to a logarithmic-style scale. Note that I have thus far avoided dealing with NAs or empty cells.</p>
+<pre class="r"><code>set.seed(412875)
+a &lt;- round(runif(100, 1, 10)^seq(1, 5, by=1), 0)
+df &lt;- data.frame(
+  lat = as.factor(sapply(1:10, function(x) rep(x, 10))), 
+  long = as.factor(seq(1, 10)), count = as.integer(a))</code></pre>
+<p>My scale breaks aren’t truly logarithmic, because I wanted them to be relatively friendly to look at.</p>
+<pre class="r"><code>scale_breaks &lt;- c(5, 10, 50, 500, 1000, 5000, 10000, 50000, 100000)
+scale_labels &lt;- c(paste0(0, &quot;-&quot;, scale_breaks[1]), 
+  sapply(seq(2, length(scale_breaks)), 
+  function(x) paste0(scale_breaks[x-1], &quot;-&quot;, scale_breaks[x])))
+df$binned_count &lt;- cut(df$count, breaks = c(0, scale_breaks), 
+  labels = scale_breaks)</code></pre>
+<p>Theme <strong>inferno</strong>’s fairly loud, but why not? I’m just messing around.</p>
+<pre class="r"><code>the_plot &lt;- ggplot(df, aes(x = long, y = lat, fill = binned_count)) +
+  geom_tile() +
+  xlab(&quot;Longitude&quot;) +
+  ylab(&quot;Latitude&quot;) +
+  scale_fill_viridis(name = &quot;No. Records&quot;, 
+    breaks = c(scale_breaks), 
+    labels = scale_labels, 
+    guide = &quot;legend&quot;, option = &quot;inferno&quot;, discrete = TRUE) </code></pre>
+<div class="figure">
+<img src="/post/2018-08-14-quarrelling-with-hugo_files/figure-html/plotThePlot-1.png" alt="Plot to demonstrate non-linear binning of spatial count data" width="576" />
+<p class="caption">
+(#plotThePlot)Plot to demonstrate non-linear binning of spatial count data
+</p>
+</div>
