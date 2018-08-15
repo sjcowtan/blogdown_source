@@ -34,15 +34,21 @@ a &lt;- round(runif(100, 1, 10)^seq(1, 5, by = 1), 0)
 df &lt;- data.frame(
   lat = as.factor(sapply(1:10, function(x) rep(x, 10))), 
   long = as.factor(seq(1, 10)), count = as.integer(a))</code></pre>
-<p>My scale breaks aren’t truly logarithmic, because I wanted them to be relatively friendly to look at.</p>
-<pre class="r"><code>scale_breaks &lt;- c(5, 10, 50, 500, 1000, 5000, 10000, 50000, 100000)
+<p>My scale breaks aren’t truly logarithmic, because I wanted them to be relatively comprehensible.</p>
+<pre class="r"><code># Not quite a true logarithmic scale, but easily comprehensible
+scale_breaks &lt;- as.vector(
+  sapply(10^seq(0, 5, by = 1), function(y) c(5, 10) * y))
+# Make labels for the plot legend
 scale_labels &lt;- c(paste0(0, &quot;-&quot;, scale_breaks[1]), 
   sapply(seq(2, length(scale_breaks)), 
   function(x) paste0(scale_breaks[x-1], &quot;-&quot;, scale_breaks[x])))
+# Bin the data
 df$binned_count &lt;- cut(df$count, breaks = c(0, scale_breaks), 
   labels = scale_breaks)</code></pre>
 <p>Theme <strong>inferno</strong>’s fairly loud, but why not? I’m just messing around.</p>
-<pre class="r"><code>heatplot &lt;- ggplot(df, aes(x = long, y = lat, fill = binned_count)) +
+<pre class="r"><code># Maybe adding a comment line or two will keep &#39;heatplot&#39; in the 
+# right place in the chunk output
+heatplot &lt;- ggplot(df, aes(x = long, y = lat, fill = binned_count)) +
   geom_tile() +
   xlab(&quot;Longitude&quot;) +
   ylab(&quot;Latitude&quot;) +
@@ -50,7 +56,7 @@ df$binned_count &lt;- cut(df$count, breaks = c(0, scale_breaks),
     breaks = c(scale_breaks), 
     labels = scale_labels, 
     guide = &quot;legend&quot;, option = &quot;inferno&quot;, discrete = TRUE) </code></pre>
-<div class="figure">
+<div class="figure" style="text-align: center">
 <img src="/post/2018-08-14-quarrelling-with-hugo_files/figure-html/plotThePlot-1.png" alt="Plot to demonstrate non-linear binning of spatial count data" width="576" />
 <p class="caption">
 (#plotThePlot)Plot to demonstrate non-linear binning of spatial count data

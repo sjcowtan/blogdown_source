@@ -54,13 +54,17 @@ df <- data.frame(
 ```
 
 My scale breaks aren't truly logarithmic, because I wanted them to be relatively
-friendly to look at.
+comprehensible.
 
 ```{r prepPlot}
-scale_breaks <- c(5, 10, 50, 500, 1000, 5000, 10000, 50000, 100000)
+# Not quite a true logarithmic scale, but easily comprehensible
+scale_breaks <- as.vector(
+  sapply(10^seq(0, 5, by = 1), function(y) c(5, 10) * y))
+# Make labels for the plot legend
 scale_labels <- c(paste0(0, "-", scale_breaks[1]), 
   sapply(seq(2, length(scale_breaks)), 
   function(x) paste0(scale_breaks[x-1], "-", scale_breaks[x])))
+# Bin the data
 df$binned_count <- cut(df$count, breaks = c(0, scale_breaks), 
   labels = scale_breaks)
 ```
@@ -68,6 +72,8 @@ df$binned_count <- cut(df$count, breaks = c(0, scale_breaks),
 Theme __inferno__'s fairly loud, but why not?  I'm just messing around.
 
 ```{r makePlot}
+# Maybe adding a comment line or two will keep 'heatplot' in the 
+# right place in the chunk output
 heatplot <- ggplot(df, aes(x = long, y = lat, fill = binned_count)) +
   geom_tile() +
   xlab("Longitude") +
@@ -78,7 +84,7 @@ heatplot <- ggplot(df, aes(x = long, y = lat, fill = binned_count)) +
     guide = "legend", option = "inferno", discrete = TRUE) 
 ```
 
-```{r plotThePlot, fig.width = 6, fig.height = 4, fig.alogn = "center", fig.cap = "Plot to demonstrate non-linear binning of spatial count data", fig.lp = "", echo = FALSE}
+```{r plotThePlot, fig.width = 6, fig.height = 4, fig.align = "center", fig.cap = "Plot to demonstrate non-linear binning of spatial count data", fig.lp = "", echo = FALSE}
 print(heatplot)
 ```
 
